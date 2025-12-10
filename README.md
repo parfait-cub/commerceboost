@@ -1,19 +1,13 @@
-# 🚀 CommerceBoost - Assistant Business Togo
+# CommerceBoost
 
-Assistant Messenger intelligent pour aider les commerçants togolais à développer leur business.
+## Install
+- Node: npm install
+- Python: pip install -r python/requirements.txt
 
-## 🌟 Features
+## Run local
+- Python API: python python/content_api.py
+- Scheduler: python python/services/scheduler.py
+- Bots: npm start
 
-- 🤖 **IA Personnalisée** - Conseils adaptés à chaque profil
-- 🎯 **Promos Ciblées** - Panel admin pour communications
-- 🌍 **Multilingue** - Français, Ewe, Kabyè
-- 👵 **Mode Senior** - Interface accessible
-- 📊 **Analytics** - Statistiques détaillées
-- 🔔 **Notifications** - Conseils quotidiens automatiques
-
-## 🛠 Installation
-
-1. **Cloner le projet**
-```bash
-git clone <repository>
-cd commerceboost
+## Déploiement Render
+Voir instructions ci-dessous.
