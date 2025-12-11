@@ -1,0 +1,14 @@
+{
+  "name": "commerceboost",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node node/core/bot_telegram.js & node node/core/bot_messenger.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "axios": "^1.7.7",
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5",
+    "joi": "^17.13.3"
+  }
+}
