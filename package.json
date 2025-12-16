@@ -11,4 +11,8 @@
     "dotenv": "^16.4.5",
     "joi": "^17.13.3"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> fc2020c (fix: déplace content_api.py et requirements.txt à la racine + ajoute package.json)
