@@ -1,4 +1,6 @@
 # python/services/scheduler.py (modifié)
+import sys
+sys.path.append('/opt/render/project/src')  # Ajoute la racine pour trouver utils/
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from pymongo import MongoClient
