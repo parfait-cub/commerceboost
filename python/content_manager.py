@@ -1,109 +1,39 @@
 # python/content_manager.py
-import google.generativeai as genai
-from utils.config import Config
-from datetime import datetime
-import calendar
+from datetime import datetime, timedelta
+from random import choice
 
-# Configuration
-genai.configure(api_key=Config.GEMINI_API_KEY)
+# Conseils prédéfinis (tu ajoutes/supprimes à la main)
+CONSEILS_QUOTIDIENS = [
+    "Augmente ce produit de 100 FCFA, tes clients ne diront rien.",
+    "Arrête les promos sur les produits à faible marge.",
+    "Mets en avant tes produits moyens, ils se vendent plus vite.",
+    "N'affiche pas trop de choix, le client hésite et part.",
+    "Propose un petit cadeau pour tout achat au-dessus d’un certain montant."
+]
 
-class CommerceBoostExpert:
-    def __init__(self):
-        self.model = genai.GenerativeModel(
-            'gemini-2.5-flash',
-            generation_config={
-                "temperature": 0.75,
-                "top_p": 0.85,
-                "top_k": 40,
-                "max_output_tokens": 900,
-            },
-            safety_settings=[
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-            ]
-        )
+def calculer_marge(achat, frais, vente_actuel):
+    cout_total = achat + frais
+    if vente_actuel <= cout_total:
+        return {
+            "marge": 0,
+            "alerte": "Tu vends à perte ! Augmente ton prix.",
+            "prix_conseille": int(cout_total * 1.3)  # 30% marge cible
+        }
+    marge_percent = round((vente_actuel - cout_total) / vente_actuel * 100, 1)
+    prix_conseille = int(cout_total * 1.3) if marge_percent < 25 else vente_actuel
+    return {
+        "marge": marge_percent,
+        "alerte": None if marge_percent > 20 else "Marge faible, tu peux augmenter.",
+        "prix_conseille": prix_conseille
+    }
 
-        self.PROMPT_EXPERT = """
-Tu es Maître Koffi, 23 ans d’expérience à Lomé. Tu as boosté 3 000 commerçants de 300 000 à 3 millions FCFA/mois.
+def generer_conseil_quotidien():
+    return choice(CONSEILS_QUOTIDIENS)
 
-RÈGLES D’OR (violation = viré) :
-- Jamais de prix, chiffres exacts, noms inventés
-- Jamais politique, religion, santé, amour, sport
-- Toujours 100 % adapté au type (physique / en ligne / mixte), secteur, niveau
-- Toujours psychologie togolaise : honte d’hésiter, besoin de se sentir VIP, urgence subtile
-- Anomalies climatiques Sud Togo : pluies irrégulières, sécheresse précoce, hausse températures → conseille adaptations flexibles, surveillance locale
-
-MOIS : {current_month_name} {current_year} → {seasonal_context}
-TYPE : {business_type} | Secteur : {sector} | Niveau : {level}
-
-QUESTION : {question}
-
-CONTEXTE : {user_context}
-
-Réponds en français togolais naturel, direct, chaleureux.
-Donne 1-2 actions puissantes pour demain matin.
-Termine par une phrase motivante courte et forte.
-
-EXEMPLES PSYCHOLOGIQUES & SAISONNIERS AVANCÉS :
-Physique → « Frère, le Togolais hésite par honte. Dis : 'C’est pour offrir ? Tu as bon goût !' → il achète pour se valoriser. En pluies irrégulières, couvre ta vitrine vite, dis 'Viens te protéger ici, on discute'. »
-En ligne → « Crée urgence : 'Dernier en stock, je le garde pour toi ?' → même s’il reste beaucoup. Avec sécheresse précoce, poste 'Protège-toi de la chaleur avec ça, livraison express'. »
-Mixte → « Fais VIP : 'Code secret boutique pour clients WhatsApp' → sentiment d’exclusivité. En anomalies climatiques, adapte stocks jour/jour : 'Aujourd’hui pluie ? Promo abritée en boutique'. »
-Physique (saison avancée) → « En hausse températures, offre eau fraîche à l’entrée → client reste plus, parle plus, achète plus par gratitude. »
-En ligne (psycho) → « Quand silence radio, envoie : 'Je pense à toi, ça te va ?' → brise la barrière émotionnelle togolaise. »
-Mixte (saison) → « Pluies tardives ? Poste en ligne 'Commande maintenant, retire sec en boutique' → exploite peur de se mouiller. »
-
-Vas-y Maître Koffi, fais-le gagner avec des secrets rares.
-"""
-
-    def get_seasonal_context(self):
-        month = datetime.now().month
-        year = datetime.now().year
-        mois = ["", "janvier", "février", "mars", "avril", "mai", "juin",
-                "juillet", "août", "septembre", "octobre", "novembre", "décembre"][month]
-        
-        saison = {
-            1: "Début d’année, argent frais, achats impulsifs – surveille anomalies pour stocks flexibles",
-            2: "Saint-Valentin, cadeaux & séduction – adapte à pluies imprévues",
-            3: "Poussière & chaleur – prépare pour sécheresse précoce",
-            6: "Pluies théoriques – mais irrégulières, focus livraison",
-            8: "Rentrée scolaire = boom – malgré températures hautes",
-            12: "Noël → achats émotionnels – gère variabilité climatique"
-        }.get(month, "Période normale, fidélisation maximale – reste vigilant aux anomalies Sud Togo")
-        
-        return mois, year, saison
-
-    def generate_response(self, question: str, user_context: dict):
-        if not question or not question.strip():
-            return "Pose-moi ta question, je suis là pour t’aider à booster ton commerce !"
-
-        # Sécurité anti-hors-sujet
-        off_topic = ['politique', 'élection', 'docteur', 'maladie', 'médicament', 'dieu', 'prière', 'amour', 'couple', 'foot', 'match']
-        if any(word in question.lower() for word in off_topic):
-            return "Je me concentre uniquement sur le commerce et le marketing pour t’aider à gagner plus. Pose-moi une question sur ton business !"
-
-        try:
-            month_name, year, seasonal = self.get_seasonal_context()
-
-            business_type = user_context.get('business_type', 'physique')
-            sector = user_context.get('sector', 'général')
-            level = user_context.get('level', 'débutant')
-
-            prompt = self.PROMPT_EXPERT.format(
-                current_month_name=month_name,
-                current_year=year,
-                seasonal_context=seasonal,
-                business_type=business_type,
-                sector=sector.capitalize(),
-                level=level.capitalize(),
-                question=question,
-                user_context=user_context
-            )
-
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
-
-        except Exception as e:
-            return "Maître Koffi a un petit problème technique… Réessaie dans 10 secondes, je reviens plus fort !"
-
-# Instance globale à importer partout
-expert_ai = CommerceBoostExpert()
+def generer_promo(type_promo):
+    templates = {
+        "jour": "Promo du jour : Achetez 2, le 3e à moitié prix ! Partage sur WhatsApp",
+        "weekend": "Week-end spécial : Tout à -20% samedi et dimanche ! Venez nombreux",
+        "destockage": "Déstocage massif : Prix cassés sur tout le stock ancien ! Premier arrivé, premier servi"
+    }
+    return templates.get(type_promo, "Promo spéciale aujourd'hui ! Viens découvrir en boutique.")
