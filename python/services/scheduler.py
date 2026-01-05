@@ -6,31 +6,35 @@ import requests
 import os
 import time
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 scheduler = BackgroundScheduler()
 
-# Keep-alive toutes les 10 min
+# Keep-alive toutes les 10 minutes
 @scheduler.scheduled_job('interval', minutes=10)
 def keep_alive():
     try:
-        requests.get(os.getenv('RENDER_EXTERNAL_URL', 'https://commerceboost-python.onrender.com/health'))
-    except:
-        pass
+        url = os.getenv('RENDER_EXTERNAL_URL') or "https://commerceboost-python.onrender.com/health"
+        requests.get(url, timeout=10)
+        logging.info("Keep-alive ping envoyé")
+    except Exception as e:
+        logging.error(f"Keep-alive échoué : {e}")
 
-# Conseil quotidien à 08h
+# Conseil quotidien à 08h00
 @scheduler.scheduled_job('cron', hour=8, minute=0)
 def send_daily_conseil():
     try:
-        response = requests.get('https://commerceboost-python.onrender.com/api/conseil-quotidien')
-        conseil = response.json().get('conseil', 'Bonne journée !')
-        # Ici tu peux ajouter l’envoi aux users via webhook Node plus tard
-        logging.info(f"Conseil envoyé : {conseil}")
+        response = requests.get("https://commerceboost-python.onrender.com/api/conseil-quotidien")
+        if response.status_code == 200:
+            conseil = response.json().get('conseil')
+            logging.info(f"Conseil quotidien généré : {conseil}")
+        else:
+            logging.error("Erreur récupération conseil")
     except Exception as e:
-        logging.error(f"Erreur conseil : {e}")
+        logging.error(f"Erreur conseil quotidien : {e}")
 
 scheduler.start()
-logging.info("Scheduler démarré")
+logging.info("Scheduler démarré – keep-alive + conseil quotidien")
 
 while True:
     time.sleep(60)
