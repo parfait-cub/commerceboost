@@ -4,10 +4,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from content_manager import calculer_marge, generer_conseil_quotidien, generer_promo
 from pymongo import MongoClient
-
-import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 from utils.config import Config
 from datetime import datetime, timedelta
 import logging
